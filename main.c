@@ -6,12 +6,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#define BUFFER_SIZE 1024
+
 typedef struct {
   int port;
 } http_server;
 
 int start_server(http_server *s) {
-
   struct sockaddr_in address = {
       .sin_family = AF_INET,
       .sin_port = htons(s->port),
@@ -27,7 +28,7 @@ int start_server(http_server *s) {
     exit(EXIT_FAILURE);
   }
 
-  // Allow 1 clients to be queued while the server processes
+  // Allow n clients to be queued while the server processes
   if (listen(server_socket, 2) < 0) {
     perror("listener failed");
     exit(EXIT_FAILURE);
@@ -43,23 +44,24 @@ int start_server(http_server *s) {
   }
 
   printf("connection accepted\n");
-  char buffer[1024] = {0};
 
+  char buffer[BUFFER_SIZE] = {0};
   ssize_t readVal;
-  while ((readVal = read(client_fd, buffer, 1024))) {
-    printf("client: %s", buffer);
-  }
+  while (1) {
+    while ((readVal = read(client_fd, buffer, BUFFER_SIZE))) {
+      /* printf("client: %s", buffer); */
+      break;
+    }
 
-  // Send message to the client
-  /* char message[] = "Hello, World!"; */
-  /* send(client_fd, message, strlen(message), 0); */
-  /* close(client_socket); */
+    char message[] = "HTTP/1.1 200 OK\r\n\r\n<html>Hello World!</html>\r\n\r\n";
+    send(client_fd, message, strlen(message), 0);
+  }
 
   return 0;
 }
 
 int main(void) {
-  http_server s = {.port = 8083};
+  http_server s = {.port = 8085};
   start_server(&s);
 
   return 0;
