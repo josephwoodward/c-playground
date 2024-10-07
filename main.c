@@ -5,12 +5,31 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #define BUFFER_SIZE 1024
+#define MAX_CONNECTIONS 3
 
 typedef struct {
   int port;
 } http_server;
+
+
+typedef struct {
+  int client_fd;
+} tcp_connection;
+
+void* makeConnection(void *args){
+  tcp_connection *conn = args;
+  ssize_t readVal;
+  char buffer[BUFFER_SIZE] = {0};
+
+    while ((readVal = read(conn->client_fd, buffer, BUFFER_SIZE))) {
+      printf("client: %s", buffer);
+      /* break; */
+    }
+  return NULL;
+}
 
 int start_server(http_server *s) {
   struct sockaddr_in address = {
@@ -43,22 +62,33 @@ int start_server(http_server *s) {
     exit(EXIT_FAILURE);
   }
 
+  //TODO: Look into adding timeouts
+
   printf("connection accepted\n");
 
-  char buffer[BUFFER_SIZE] = {0};
-  ssize_t readVal;
+  // TODO: track multiple connections
+  pthread_t thread_id;
+  tcp_connection active_conn = {
+      .client_fd = client_fd,
+  };
+
+  int established = 0;
+
   while (1) {
-    while ((readVal = read(client_fd, buffer, BUFFER_SIZE))) {
-      /* printf("client: %s", buffer); */
-      break;
+     
+    if (established == 0) {
+      pthread_create(&thread_id, NULL, makeConnection, &active_conn);
+      established = 1;
     }
 
-    char message[] = "HTTP/1.1 200 OK\r\n\r\n<html>Hello World!</html>\r\n\r\n";
-    send(client_fd, message, strlen(message), 0);
+    /* char message[] = "HTTP/1.1 200 OK\r\n\r\n<html>Hello World!</html>\r\n\r\n"; */
+    /* send(client_fd, message, strlen(message), 0); */
   }
 
   return 0;
 }
+
+
 
 int main(void) {
   http_server s = {.port = 8085};
