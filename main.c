@@ -8,7 +8,7 @@
 #include <pthread.h>
 
 #define BUFFER_SIZE 1024
-#define MAX_CONNECTIONS 3
+#define MAX_CLIENTS 3
 
 typedef struct {
   int port;
@@ -19,15 +19,19 @@ typedef struct {
   int client_fd;
 } tcp_connection;
 
-void* makeConnection(void *args){
+void* manage_connection(void *args){
   tcp_connection *conn = args;
   ssize_t readVal;
   char buffer[BUFFER_SIZE] = {0};
 
-    while ((readVal = read(conn->client_fd, buffer, BUFFER_SIZE))) {
-      printf("client: %s", buffer);
-      /* break; */
-    }
+  while ((readVal = read(conn->client_fd, buffer, BUFFER_SIZE))) {
+    printf("[fd %d]: %s", conn->client_fd, buffer);
+    /* char message[] = "HTTP/1.1 200 OK\r\n\r\n<html>Hello World!</html>\r\n\r\n"; */
+    char message[] = "pong\n";
+    send(conn->client_fd, message, strlen(message), 0);
+    /* break; */
+  }
+
   return NULL;
 }
 
@@ -55,34 +59,35 @@ int start_server(http_server *s) {
 
   printf("Server started and listening on port %d\n", s->port);
 
-  // Wait for client to connect, then open a socket
-  int client_fd = accept(server_socket, NULL, NULL);
-  if (client_fd < 0) {
-    perror("failed to connect to client");
-    exit(EXIT_FAILURE);
-  }
-
-  //TODO: Look into adding timeouts
-
-  printf("connection accepted\n");
-
   // TODO: track multiple connections
-  pthread_t thread_id;
-  tcp_connection active_conn = {
-      .client_fd = client_fd,
-  };
+  tcp_connection* clients[MAX_CLIENTS];
+  pthread_t thread_id[MAX_CLIENTS];
+  int i;
 
-  int established = 0;
 
   while (1) {
-     
-    if (established == 0) {
-      pthread_create(&thread_id, NULL, makeConnection, &active_conn);
-      established = 1;
+
+    int client_fd = accept(server_socket, NULL, NULL);
+    if (client_fd < 0) {
+      perror("failed to connect to client");
+      exit(EXIT_FAILURE);
     }
 
-    /* char message[] = "HTTP/1.1 200 OK\r\n\r\n<html>Hello World!</html>\r\n\r\n"; */
-    /* send(client_fd, message, strlen(message), 0); */
+    //TODO: Add timeout when establishing connection
+    printf("connection accepted\n");
+
+    tcp_connection conn = {
+      .client_fd = client_fd,
+    };
+
+    if(pthread_create(&thread_id[i], NULL, manage_connection, &conn)){
+      perror("failed to manage connection");
+      exit(EXIT_FAILURE);
+    }
+
+    clients[i] = &conn;
+    i++;
+
   }
 
   return 0;
@@ -91,7 +96,7 @@ int start_server(http_server *s) {
 
 
 int main(void) {
-  http_server s = {.port = 8085};
+  http_server s = {.port = 8087};
   start_server(&s);
 
   return 0;
