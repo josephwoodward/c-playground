@@ -1,6 +1,10 @@
 #ifndef PROXY_H
 #define PROXY_H
 
+#ifndef MAX_CLIENTS
+#define MAX_CLIENTS 8
+#endif
+
 struct http_server {
     int port;
 };
