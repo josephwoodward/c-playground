@@ -8,20 +8,13 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "proxy.h"
+
 #define BUFFER_SIZE 1024
 #define MAX_CLIENTS 3
 
-typedef struct {
-    int port;
-} http_server;
-
-typedef struct {
-    int client_fd;
-    int closed;
-} tcp_connection;
-
 void *manage_connection(void *args) {
-    tcp_connection *conn = args;
+    struct tcp_connection *conn = args;
     ssize_t readVal;
     char buffer[BUFFER_SIZE] = {0};
 
@@ -36,7 +29,7 @@ void *manage_connection(void *args) {
     return NULL;
 }
 
-int start_server(http_server *s) {
+int start_server(struct http_server *s) {
     struct sockaddr_in address = {
 	.sin_family = AF_INET,
 	.sin_port = htons(s->port),
@@ -60,7 +53,7 @@ int start_server(http_server *s) {
 
     printf("Server started and listening on port %d\n", s->port);
 
-    tcp_connection clients[MAX_CLIENTS];
+    struct tcp_connection clients[MAX_CLIENTS];
     pthread_t thread_id;
 
     // default to -1 so we can check if set
@@ -80,7 +73,7 @@ int start_server(http_server *s) {
 	// examine existing connections to see if we can establish new ones
 	int i;
 	for (i = 0; i < MAX_CLIENTS; i++) {
-	    tcp_connection conn = {
+	    struct tcp_connection conn = {
 		.client_fd = client_fd,
 	    };
 
@@ -112,7 +105,7 @@ int start_server(http_server *s) {
 }
 
 int main(void) {
-    http_server s = {.port = 8086};
+    struct http_server s = {.port = 8086};
     start_server(&s);
 
     return 0;
