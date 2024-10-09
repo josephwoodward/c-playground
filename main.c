@@ -9,7 +9,7 @@
 #include "proxy.c"
 #include "proxy.h"
 
-int main(void) {
+int main(int argc, char *argv[]) {
     struct http_server s = {.port = 8086};
     start_server(&s);
 
