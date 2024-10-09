@@ -36,7 +36,7 @@ int start_server(struct http_server *s) {
     };
 
     int server_socket = socket(AF_INET, SOCK_STREAM, 0);
-    printf("starting server on port %d with %d clients\n", s->port, MAX_CLIENTS);
+    printf("starting server on port %d\n", s->port);
 
     // Bind server_socket to address
     if (bind(server_socket, (struct sockaddr *)&address, sizeof(address)) < 0) {
