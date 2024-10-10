@@ -5,7 +5,7 @@
 #define MAX_CLIENTS 8
 #endif
 
-struct http_server {
+struct tcp_server {
     int port;
 };
 
@@ -16,6 +16,6 @@ struct tcp_connection {
 
 void *manage_connection(void *args);
 
-int start_server(struct http_server *s);
+int start_server(struct tcp_server *s);
  
 #endif /* PROXY_H */

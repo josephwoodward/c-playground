@@ -16,19 +16,63 @@ void *manage_connection(void *args) {
     struct tcp_connection *conn = args;
     ssize_t readVal;
     char buffer[BUFFER_SIZE] = {0};
+    int upstream_fd;
+    struct sockaddr_in server_addr;
+    char server_message[2000], client_message[2000];
+
+    // Clean buffers:
+    memset(server_message, '\0', sizeof(server_message));
+    memset(client_message, '\0', sizeof(client_message));
+
+    // Create socket:
+    upstream_fd = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (upstream_fd < 0) {
+	printf("Unable to create socket\n");
+	/* return -1; */
+	return NULL;
+    }
+
+    printf("Socket created successfully\n");
+
+    // Set port and IP the same as server-side:
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8080);
+    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+    // Send connection request to server:
+    if (connect(upstream_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+	printf("Unable to connect\n");
+	return NULL;
+    }
+
+    char message[] = "GET / HTTP/1.1\r\nHost: localhost:8080\r\nConnection:keep-alive\r\n\r\n";
+
+    printf("Connected with server successfully\n");
+    if (send(upstream_fd, message, strlen(message), 0) < 0) {
+	printf("Unable to send message\n");
+	return NULL;
+    }
+
+    // Receive the server's response:
+    if (recv(upstream_fd, server_message, sizeof(server_message), 0) < 0) {
+	printf("Error while receiving server's msg\n");
+	return NULL;
+    }
+    printf("Server's response: %s\n", server_message);
 
     while ((readVal = read(conn->client_fd, buffer, BUFFER_SIZE) != -1)) {
 	printf("[fd %d]: %s\n", conn->client_fd, buffer);
 
 	/* char message[] = "HTTP/1.1 200 OK\r\n\r\n<html>Hello World!</html>\r\n\r\n"; */
-	char message[] = "pong\n";
-	send(conn->client_fd, message, strlen(message), 0);
+	/* char message[] = "pong\n"; */
+	send(conn->client_fd, server_message, strlen(server_message), 0);
     }
 
     return NULL;
 }
 
-int start_server(struct http_server *s) {
+int start_server(struct tcp_server *s) {
     struct sockaddr_in address = {
 	.sin_family = AF_INET,
 	.sin_port = htons(s->port),
