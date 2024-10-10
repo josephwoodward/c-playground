@@ -10,7 +10,7 @@
 #include "proxy.h"
 
 int main(int argc, char *argv[]) {
-    struct tcp_server s = {.port = 8085};
+    struct tcp_server s = {.port = 8084};
     start_server(&s);
 
     return 0;

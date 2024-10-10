@@ -46,45 +46,18 @@ void *manage_connection(void *args) {
 	return NULL;
     }
 
-    /* char message[] = "GET / HTTP/1.1\r\nHost: localhost:8080\r\nConnection:keep-alive\r\n\r\n"; */
-
     printf("Connected with server successfully\n");
 
     // TODO: Do this more efficiently
     while ((readVal = read(conn->client_fd, buffer, BUFFER_SIZE) != -1)) {
-	/* printf("[fd %d]: %s\n", conn->client_fd, buffer); */
-
-	/* char message[] = "HTTP/1.1 200 OK\r\n\r\n<html>Hello World!</html>\r\n\r\n"; */
-	/* char message[] = "pong\n"; */
-	/* send(conn->client_fd, buffer, strlen(buffer), 0); */
-
 	if (send(upstream_fd, buffer, strlen(buffer), 0) < 0) {
 	    printf("Unable to send message\n");
 	    return NULL;
 	}
 
 	while ((readVal = read(upstream_fd, server_message, sizeof(server_message)) != -1)) {
-	    /* printf("[fd %d]: %s\n", conn->client_fd, buffer); */
-
-	    /* char message[] = "HTTP/1.1 200 OK\r\n\r\n<html>Hello World!</html>\r\n\r\n"; */
-	    /* char message[] = "pong\n"; */
 	    send(conn->client_fd, server_message, strlen(server_message), 0);
 	}
-    }
-
-    // Receive the server's response:
-    if (recv(upstream_fd, server_message, sizeof(server_message), 0) < 0) {
-	printf("Error while receiving server's msg\n");
-	return NULL;
-    }
-    printf("Server's response: %s\n", server_message);
-
-    while ((readVal = read(conn->client_fd, buffer, BUFFER_SIZE) != -1)) {
-	printf("[fd %d]: %s\n", conn->client_fd, buffer);
-
-	/* char message[] = "HTTP/1.1 200 OK\r\n\r\n<html>Hello World!</html>\r\n\r\n"; */
-	/* char message[] = "pong\n"; */
-	send(conn->client_fd, server_message, strlen(server_message), 0);
     }
 
     return NULL;
